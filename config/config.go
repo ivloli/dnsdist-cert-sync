@@ -30,6 +30,12 @@ type CertConfig struct {
 	KeyFile     string `yaml:"key_file"`
 	ChainFile   string `yaml:"chain_file"`
 	RawDumpFile string `yaml:"raw_dump_file"`
+	Owner       string `yaml:"owner"`
+	Group       string `yaml:"group"`
+	CertMode    string `yaml:"cert_mode"`
+	KeyMode     string `yaml:"key_mode"`
+	ChainMode   string `yaml:"chain_mode"`
+	RawDumpMode string `yaml:"raw_dump_mode"`
 }
 
 type DNSDistConfig struct {
@@ -77,6 +83,24 @@ func (c *Config) validate() error {
 	}
 	if c.Cert.KeyFile == "" {
 		return fmt.Errorf("cert.key_file is required")
+	}
+	if c.Cert.Owner == "" {
+		c.Cert.Owner = "_dnsdist"
+	}
+	if c.Cert.Group == "" {
+		c.Cert.Group = "_dnsdist"
+	}
+	if c.Cert.CertMode == "" {
+		c.Cert.CertMode = "0755"
+	}
+	if c.Cert.KeyMode == "" {
+		c.Cert.KeyMode = "0755"
+	}
+	if c.Cert.ChainMode == "" {
+		c.Cert.ChainMode = "0644"
+	}
+	if c.Cert.RawDumpMode == "" {
+		c.Cert.RawDumpMode = "0640"
 	}
 
 	if c.DNSDist.BinaryPath == "" {

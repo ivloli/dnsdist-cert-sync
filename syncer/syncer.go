@@ -13,7 +13,9 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"os/user"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -133,9 +135,29 @@ func (s *Syncer) applyContent(content, source string) error {
 }
 
 func (s *Syncer) writeFiles(raw string, p certPayload) error {
+	certMode, err := parseFileMode(s.cfg.Cert.CertMode)
+	if err != nil {
+		return fmt.Errorf("parse cert.cert_mode: %w", err)
+	}
+	keyMode, err := parseFileMode(s.cfg.Cert.KeyMode)
+	if err != nil {
+		return fmt.Errorf("parse cert.key_mode: %w", err)
+	}
+	chainMode, err := parseFileMode(s.cfg.Cert.ChainMode)
+	if err != nil {
+		return fmt.Errorf("parse cert.chain_mode: %w", err)
+	}
+	rawDumpMode, err := parseFileMode(s.cfg.Cert.RawDumpMode)
+	if err != nil {
+		return fmt.Errorf("parse cert.raw_dump_mode: %w", err)
+	}
+
 	if s.cfg.Cert.RawDumpFile != "" {
-		if err := atomicWrite(s.cfg.Cert.RawDumpFile, []byte(raw), 0640); err != nil {
+		if err := atomicWrite(s.cfg.Cert.RawDumpFile, []byte(raw), rawDumpMode); err != nil {
 			return fmt.Errorf("write raw_dump_file: %w", err)
+		}
+		if err := applyOwnerAndMode(s.cfg.Cert.RawDumpFile, s.cfg.Cert.Owner, s.cfg.Cert.Group, rawDumpMode); err != nil {
+			return fmt.Errorf("set raw_dump_file owner/mode: %w", err)
 		}
 	}
 
@@ -146,18 +168,95 @@ func (s *Syncer) writeFiles(raw string, p certPayload) error {
 			certContent = certContent + "\n" + p.CA
 		}
 	}
-	if err := atomicWrite(s.cfg.Cert.CertFile, []byte(certContent), 0644); err != nil {
+	if err := atomicWrite(s.cfg.Cert.CertFile, []byte(certContent), certMode); err != nil {
 		return fmt.Errorf("write cert_file: %w", err)
 	}
-	if err := atomicWrite(s.cfg.Cert.KeyFile, []byte(p.Key), 0600); err != nil {
+	if err := applyOwnerAndMode(s.cfg.Cert.CertFile, s.cfg.Cert.Owner, s.cfg.Cert.Group, certMode); err != nil {
+		return fmt.Errorf("set cert_file owner/mode: %w", err)
+	}
+	if err := atomicWrite(s.cfg.Cert.KeyFile, []byte(p.Key), keyMode); err != nil {
 		return fmt.Errorf("write key_file: %w", err)
 	}
+	if err := applyOwnerAndMode(s.cfg.Cert.KeyFile, s.cfg.Cert.Owner, s.cfg.Cert.Group, keyMode); err != nil {
+		return fmt.Errorf("set key_file owner/mode: %w", err)
+	}
 	if s.cfg.Cert.ChainFile != "" {
-		if err := atomicWrite(s.cfg.Cert.ChainFile, []byte(p.CA), 0644); err != nil {
+		if err := atomicWrite(s.cfg.Cert.ChainFile, []byte(p.CA), chainMode); err != nil {
 			return fmt.Errorf("write chain_file: %w", err)
+		}
+		if err := applyOwnerAndMode(s.cfg.Cert.ChainFile, s.cfg.Cert.Owner, s.cfg.Cert.Group, chainMode); err != nil {
+			return fmt.Errorf("set chain_file owner/mode: %w", err)
 		}
 	}
 	return nil
+}
+
+func parseFileMode(v string) (os.FileMode, error) {
+	v = strings.TrimSpace(v)
+	if v == "" {
+		return 0, fmt.Errorf("empty mode")
+	}
+	n, err := strconv.ParseUint(v, 8, 32)
+	if err != nil {
+		return 0, fmt.Errorf("invalid mode %q", v)
+	}
+	return os.FileMode(n), nil
+}
+
+func applyOwnerAndMode(path, ownerName, groupName string, mode os.FileMode) error {
+	uid, err := resolveUID(ownerName)
+	if err != nil {
+		return err
+	}
+	gid, err := resolveGID(groupName)
+	if err != nil {
+		return err
+	}
+	if err := os.Chown(path, uid, gid); err != nil {
+		return err
+	}
+	if err := os.Chmod(path, mode); err != nil {
+		return err
+	}
+	return nil
+}
+
+func resolveUID(v string) (int, error) {
+	v = strings.TrimSpace(v)
+	if v == "" {
+		return -1, fmt.Errorf("empty owner")
+	}
+	if n, err := strconv.Atoi(v); err == nil {
+		return n, nil
+	}
+	u, err := user.Lookup(v)
+	if err != nil {
+		return -1, fmt.Errorf("lookup owner %q: %w", v, err)
+	}
+	n, err := strconv.Atoi(u.Uid)
+	if err != nil {
+		return -1, fmt.Errorf("parse owner uid %q: %w", u.Uid, err)
+	}
+	return n, nil
+}
+
+func resolveGID(v string) (int, error) {
+	v = strings.TrimSpace(v)
+	if v == "" {
+		return -1, fmt.Errorf("empty group")
+	}
+	if n, err := strconv.Atoi(v); err == nil {
+		return n, nil
+	}
+	g, err := user.LookupGroup(v)
+	if err != nil {
+		return -1, fmt.Errorf("lookup group %q: %w", v, err)
+	}
+	n, err := strconv.Atoi(g.Gid)
+	if err != nil {
+		return -1, fmt.Errorf("parse group gid %q: %w", g.Gid, err)
+	}
+	return n, nil
 }
 
 func (s *Syncer) reloadDNSDist() error {

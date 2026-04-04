@@ -11,6 +11,12 @@ cert:
   key_file: "/etc/dnsdist/ufaei.com.key"
   chain_file: ""
   raw_dump_file: "/etc/dnsdist/nacos_cert.json"
+  owner: "_dnsdist"
+  group: "_dnsdist"
+  cert_mode: "0755"
+  key_mode: "0755"
+  chain_mode: "0644"
+  raw_dump_mode: "0640"
 
 dnsdist:
   binary_path: "/usr/bin/dnsdist"
