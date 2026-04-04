@@ -1,0 +1,17 @@
+[Unit]
+Description=Sync TLS certs from Nacos to dnsdist
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+EnvironmentFile=-/etc/dnsdist-cert-sync/env
+ExecStart=/usr/local/bin/dnsdist-cert-sync -config /etc/dnsdist-cert-sync/config.yaml
+Restart=on-failure
+RestartSec=5s
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=dnsdist-cert-sync
+
+[Install]
+WantedBy=multi-user.target

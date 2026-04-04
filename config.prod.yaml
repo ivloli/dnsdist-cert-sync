@@ -1,0 +1,25 @@
+nacos:
+  addr: "172.31.40.191:8848"
+  namespace: "dnps-dev"
+  group: "certs"
+  data_id: "66"
+  username: "${NACOS_USERNAME}"
+  password: "${NACOS_PASSWORD}"
+
+cert:
+  cert_file: "/etc/dnsdist/ufaei.com.crt"
+  key_file: "/etc/dnsdist/ufaei.com.key"
+  chain_file: ""
+  raw_dump_file: "/etc/dnsdist/nacos_cert.json"
+
+dnsdist:
+  binary_path: "/usr/bin/dnsdist"
+  control_addr: "127.0.0.1:15199"
+  control_key: "${DNSDIST_CONTROL_KEY}"
+  reload_lua_command: "reloadAllCertificates()"
+  # 若本机 dnsdist CLI 用法不同，可直接写完整 shell 命令覆盖默认行为。
+  # reload_command: "/usr/bin/dnsdist -c 127.0.0.1:15199 -k ${DNSDIST_CONTROL_KEY} -e 'reloadAllCertificates()'"
+  reload_command: ""
+
+sync:
+  poll_interval: "30s"
