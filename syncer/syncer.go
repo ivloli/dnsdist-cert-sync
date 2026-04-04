@@ -95,9 +95,13 @@ func (s *Syncer) applyContent(content, source string) error {
 	hash := hex.EncodeToString(h[:])
 
 	s.mu.Lock()
-	if hash == s.lastH {
+	missingPath, missing := s.hasMissingRuntimeFiles()
+	if hash == s.lastH && !missing {
 		s.mu.Unlock()
 		return nil
+	}
+	if hash == s.lastH && missing {
+		log.Printf("[cert-sync] content hash unchanged but local runtime file missing (%s), forcing re-apply", missingPath)
 	}
 	s.mu.Unlock()
 
@@ -201,6 +205,23 @@ func parseFileMode(v string) (os.FileMode, error) {
 		return 0, fmt.Errorf("invalid mode %q", v)
 	}
 	return os.FileMode(n), nil
+}
+
+func (s *Syncer) hasMissingRuntimeFiles() (string, bool) {
+	paths := []string{s.cfg.Cert.CertFile, s.cfg.Cert.KeyFile}
+	for _, p := range paths {
+		p = strings.TrimSpace(p)
+		if p == "" {
+			continue
+		}
+		if _, err := os.Stat(p); err != nil {
+			if os.IsNotExist(err) {
+				return p, true
+			}
+			return fmt.Sprintf("%s (%v)", p, err), true
+		}
+	}
+	return "", false
 }
 
 func applyOwnerAndMode(path, ownerName, groupName string, mode os.FileMode) error {
