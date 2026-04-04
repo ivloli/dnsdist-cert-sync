@@ -1,8 +1,8 @@
 nacos:
-  addr: "172.31.40.191:8848"
-  namespace: "dnps-dev"
+  addr: "139.159.195.20:8848"
+  namespace: "scloud-prod"
   group: "certs"
-  data_id: "66"
+  data_id: "120"
   username: "${NACOS_USERNAME}"
   password: "${NACOS_PASSWORD}"
 
