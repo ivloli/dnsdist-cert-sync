@@ -1,14 +1,14 @@
 nacos:
-  addr: "139.159.195.20:8848"
-  namespace: "scloud-prod"
+  addr: "nacos.example.com:8848"
+  namespace: "prod-namespace"
   group: "certs"
-  data_id: "120"
+  data_id: "dnsdist-cert"
   username: "${NACOS_USERNAME}"
   password: "${NACOS_PASSWORD}"
 
 cert:
-  cert_file: "/etc/dnsdist/ufaei.com.crt"
-  key_file: "/etc/dnsdist/ufaei.com.key"
+  cert_file: "/etc/dnsdist/example.com.crt"
+  key_file: "/etc/dnsdist/example.com.key"
   chain_file: ""
   raw_dump_file: "/etc/dnsdist/nacos_cert.json"
   owner: "_dnsdist"

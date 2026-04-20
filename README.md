@@ -27,6 +27,15 @@ make package
 
 It outputs `dnsdist-cert-sync-standalone.tar.gz`.
 
+## Release package
+
+```bash
+make release-package
+make release-checksum
+```
+
+If Jenkins supplies a custom config, pass `CONFIG_SRC=/path/to/config.yaml` to `make release-package` and `make install`.
+
 ## Sparse clone only this directory
 
 If your source repo still contains other components, you can fetch only this folder:
