@@ -1,5 +1,5 @@
 nacos:
-  addr: "172.17.0.2:8848"
+  addr: "120.25.74.229:8848"
   namespace: "scloud-prod"
   group: "certs"
   data_id: "120"
