@@ -1,0 +1,6 @@
+.git
+.gitignore
+bin/
+release/
+*.tar.gz
+*.md
